@@ -1,0 +1,52 @@
+LoginControllerTest.java
+@WebMvcTest(LoginController.class)
+public class LoginControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private UserRepository userRepository;
+
+    // Test 1: Page load test
+    @Test
+    public void testLoginPageLoadsSuccessfully() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("login.html")); // Expecting login.html view
+    }
+
+    // Test 2: Successful login
+    @Test
+    public void testLoginSuccess() throws Exception {
+        // Given
+        User mockUser = new User();
+        mockUser.setUsername("john");
+        mockUser.setPassword("1234");
+
+        when(userRepository.findByUsernameAndPassword("john", "1234")).thenReturn(mockUser);
+
+        // When & Then
+        mockMvc.perform(post("/login")
+                        .param("username", "john")
+                        .param("password", "1234"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Login Successful! Welcome john"));
+
+        verify(userRepository, times(1)).findByUsernameAndPassword("john", "1234");
+    }
+
+    // Test 3: Invalid login
+    @Test
+    public void testLoginFailure() throws Exception {
+        when(userRepository.findByUsernameAndPassword("wrongUser", "wrongPass")).thenReturn(null);
+
+        mockMvc.perform(post("/login")
+                        .param("username", "wrongUser")
+                        .param("password", "wrongPass"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Invalid username or password"));
+
+        verify(userRepository, times(1)).findByUsernameAndPassword("wrongUser", "wrongPass");
+    }
+}
